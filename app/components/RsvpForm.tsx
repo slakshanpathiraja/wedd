@@ -104,15 +104,6 @@ export default function RsvpForm({ guest: initialGuest, onSuccess, isModal = fal
       <h2 className="text-2xl sm:text-3xl font-serif text-stone-900 mt-1 font-medium">
         {guest.initial ? `${guest.initial} ` : ""}{guest.name}
       </h2>
-
-      {isLocked && (
-        <div className="mt-3 inline-flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs px-3 py-1 rounded-full font-medium">
-          <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
-          </svg>
-          <span>RSVP Confirmed</span>
-        </div>
-      )}
     </div>
   );
 

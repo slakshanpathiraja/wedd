@@ -63,8 +63,51 @@ function doGet(e) {
       return handleUpdate(params);
     }
 
-    // Default: Get guest by invite code
     const inviteCode = (params.ic || params.invite_code || "").toString().trim();
+
+    // Action to get all non-empty wishes
+    if (action === "wishes" || action === "all" || action === "getall" || inviteCode.toLowerCase() === "wishes") {
+      const sheet = getSheet();
+      if (!sheet) {
+        return jsonResponse({
+          success: false,
+          error: `Sheet '${SHEET_NAME}' not found.`
+        });
+      }
+
+      const data = sheet.getDataRange().getValues();
+      let wishColIdx = COL.WISH - 1;
+      let nameColIdx = COL.NAME - 1;
+      let initialColIdx = COL.INITIAL - 1;
+
+      if (data.length > 0) {
+        const headers = data[0].map(function(h) { return (h || "").toString().trim().toLowerCase(); });
+        const foundWish = headers.findIndex(function(h) { return h.indexOf("wish") !== -1; });
+        if (foundWish !== -1) wishColIdx = foundWish;
+        const foundName = headers.findIndex(function(h) { return h.indexOf("name") !== -1; });
+        if (foundName !== -1) nameColIdx = foundName;
+        const foundInit = headers.findIndex(function(h) { return h.indexOf("initial") !== -1; });
+        if (foundInit !== -1) initialColIdx = foundInit;
+      }
+
+      const wishes = [];
+      for (let i = 1; i < data.length; i++) {
+        const row = data[i];
+        const wishText = (row[wishColIdx] || "").toString().trim();
+        if (wishText && wishText.length > 0) {
+          wishes.push({
+            name: (row[nameColIdx] || "").toString().trim(),
+            initial: (row[initialColIdx] || "").toString().trim(),
+            wish: wishText,
+          });
+        }
+      }
+
+      return jsonResponse({
+        success: true,
+        data: wishes
+      });
+    }
 
     if (!inviteCode) {
       return jsonResponse({

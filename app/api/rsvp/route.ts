@@ -109,6 +109,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (wish && typeof wish === "string" && wish.trim().length > 0) {
+      const { saveLocalWish } = await import("@/lib/wishes-store");
+      saveLocalWish({
+        name: existing.guest?.name || "Guest",
+        initial: existing.guest?.initial || "",
+        wish: wish.trim(),
+      });
+    }
+
     const scriptUrl = process.env.GOOGLE_SHEET_APP_SCRIPT_URL?.trim();
 
     if (scriptUrl) {

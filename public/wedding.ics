@@ -1,0 +1,30 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Hansani and Lakshan//Wedding Celebration//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:Hansani & Lakshan Wedding
+X-WR-TIMEZONE:Asia/Colombo
+BEGIN:VEVENT
+UID:hansani-lakshan-wedding-20270311@celebration.wedding
+DTSTAMP:20260926T000000Z
+DTSTART:20270311T040300Z
+DTEND:20270311T113000Z
+SUMMARY:Hansani & Lakshan Wedding
+DESCRIPTION:Wedding Celebration of Hansani and Lakshan at Silver Ray, Pink Sapphire Banquet Hall, Rathnapura.\n\nCeremony at 09:33 AM.\nWe look forward to celebrating our special day with you!
+LOCATION:Silver Ray, Pink Sapphire Banquet Hall, Rathnapura, Sri Lanka
+STATUS:CONFIRMED
+SEQUENCE:0
+BEGIN:VALARM
+TRIGGER:-PT24H
+ACTION:DISPLAY
+DESCRIPTION:Reminder: Hansani & Lakshan Wedding Tomorrow!
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT2H
+ACTION:DISPLAY
+DESCRIPTION:Reminder: Hansani & Lakshan Wedding at 09:33 AM Today!
+END:VALARM
+END:VEVENT
+END:VCALENDAR
+

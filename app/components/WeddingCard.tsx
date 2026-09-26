@@ -1,9 +1,12 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { motion } from "motion/react";
+import { toPng } from "html-to-image";
 import { GuestRsvp } from "@/lib/types";
 import RsvpForm from "./RsvpForm";
+import InvitationDownloadCard from "./InvitationDownloadCard";
 
 interface WeddingCardProps {
   guest?: GuestRsvp;
@@ -18,7 +21,7 @@ interface WeddingCardProps {
  * - "perera family" / "Family: Perera" -> "The Perera Family"
  * - Fallback -> "You"
  */
-function formatGuestInvitationName(guest?: GuestRsvp | null): string {
+export function formatGuestInvitationName(guest?: GuestRsvp | null): string {
   if (!guest) return "You";
 
   const rawName = (guest.name || "").trim();
@@ -152,12 +155,66 @@ export default function WeddingCard({
     return () => clearTimeout(timer);
   }, [isConfirmed, isRsvpModalOpen]);
 
-  const handleDownload = () => {
-    window.print();
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const handleDownload = async () => {
+    if (isDownloading) return;
+    const captureEl = document.getElementById("invitation-download-canvas");
+    if (!captureEl) return;
+
+    setIsDownloading(true);
+    try {
+      if (document.fonts?.ready) {
+        await document.fonts.ready;
+      }
+
+      const dataUrl = await toPng(captureEl, {
+        width: 390,
+        height: 680,
+        canvasWidth: 780,
+        canvasHeight: 1360,
+        pixelRatio: 2,
+        cacheBust: true,
+      });
+
+      const link = document.createElement("a");
+      const cleanGuest = inviteeName.replace(/[^a-zA-Z0-9]/g, "_").replace(/_+/g, "_");
+      link.download = `Hansani_Lakshan_Wedding_Invitation_${cleanGuest || "Card"}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error("Failed to generate invitation image:", err);
+      window.print();
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   const calendarUrl =
     "https://calendar.google.com/calendar/render?action=TEMPLATE&text=Hansani+%26+Lakshan+Wedding&dates=20270311T040300Z/20270311T113000Z&details=Wedding+Celebration+of+Hansani+%26+Lakshan+at+Silver+Ray%2C+Pink+Sapphire+Banquet+Hall%2C+Rathnapura&location=Silver+Ray%2C+Pink+Sapphire+Banquet+Hall%2C+Rathnapura";
+
+  const googleMapsUrl =
+    "https://www.google.com/maps/place/Silver+Ray+Grand+(pvt)+Ltd/@6.6570941,80.4855965,17z/data=!3m1!4b1!4m9!3m8!1s0x3ae3ebe080825955:0xc745fc45f7e38a87!5m2!4m1!1i2!8m2!3d6.6570941!4d80.4881714!16s%2Fg%2F11f64cg5xs?entry=ttu&g_ep=EgoyMDI2MDkyMy4wIKXMDSoASAFQAw%3D%3D";
+
+  const handleCalendarClick = () => {
+    if (typeof window === "undefined") return;
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const isMac = /Macintosh|Mac OS X/i.test(navigator.userAgent);
+    const isIpadOS = navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+    const isApple = isIOS || isMac || isIpadOS;
+
+    if (isApple) {
+      // In iOS / macOS, opening the .ics triggers native Apple Calendar sheet
+      const link = document.createElement("a");
+      link.href = "/wedding.ics";
+      link.setAttribute("download", "Hansani-Lakshan-Wedding.ics");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } else {
+      window.open(calendarUrl, "_blank", "noopener,noreferrer");
+    }
+  };
 
   return (
     <div className="w-screen h-screen overflow-hidden flex flex-col items-center justify-center select-none p-3 sm:p-6 md:p-4 print:w-full print:h-screen print:overflow-visible print:p-0 print:m-0 print:bg-[#FAF7F2]">
@@ -446,10 +503,13 @@ export default function WeddingCard({
                   },
                 },
               }}
-              className="flex items-center justify-center gap-5 sm:gap-9 mt-4 sm:mt-5 md:mt-3 print:hidden select-none"
+              className="flex items-center justify-center gap-3.5 sm:gap-7 md:gap-8 mt-4 sm:mt-5 md:mt-3 print:hidden select-none"
             >
               {/* 1. Location */}
               <motion.a
+                href={googleMapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
                 variants={{
                   hidden: { opacity: 0, y: 12 },
                   visible: {
@@ -460,11 +520,8 @@ export default function WeddingCard({
                 }}
                 whileHover={{ y: -3, transition: { duration: 0.25, ease: "easeOut" } }}
                 whileTap={{ y: 0, scale: 0.98 }}
-                href="https://maps.app.goo.gl/rEJvveBQ6KeJzF918"
-                target="_blank"
-                rel="noopener noreferrer"
                 className="group flex flex-col items-center gap-2 cursor-pointer"
-                title="View Location on Google Maps"
+                title="Open in Google Maps"
               >
                 <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full border border-[#B4914F]/70 bg-[#FAF7F2] group-hover:bg-[#B4914F] group-hover:border-[#B4914F] flex items-center justify-center transition-all duration-300 shadow-[0_6px_16px_-6px_rgba(180,145,79,0.45)] group-hover:shadow-[0_8px_20px_-4px_rgba(180,145,79,0.6)]">
                   <svg className="w-[18px] h-[18px] sm:w-5 sm:h-5 text-[#3A362C] group-hover:text-white transition-colors" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
@@ -485,7 +542,9 @@ export default function WeddingCard({
               </motion.a>
 
               {/* 2. Calendar */}
-              <motion.a
+              <motion.button
+                type="button"
+                onClick={handleCalendarClick}
                 variants={{
                   hidden: { opacity: 0, y: 12 },
                   visible: {
@@ -496,11 +555,8 @@ export default function WeddingCard({
                 }}
                 whileHover={{ y: -3, transition: { duration: 0.25, ease: "easeOut" } }}
                 whileTap={{ y: 0, scale: 0.98 }}
-                href={calendarUrl}
-                target="_blank"
-                rel="noopener noreferrer"
                 className="group flex flex-col items-center gap-2 cursor-pointer"
-                title="Add to Google Calendar"
+                title="Add to Calendar"
               >
                 <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full border border-[#B4914F]/70 bg-[#FAF7F2] group-hover:bg-[#B4914F] group-hover:border-[#B4914F] flex items-center justify-center transition-all duration-300 shadow-[0_6px_16px_-6px_rgba(180,145,79,0.45)] group-hover:shadow-[0_8px_20px_-4px_rgba(180,145,79,0.6)]">
                   <svg className="w-[18px] h-[18px] sm:w-5 sm:h-5 text-[#3A362C] group-hover:text-white transition-colors" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
@@ -517,7 +573,7 @@ export default function WeddingCard({
                 >
                   Calendar
                 </span>
-              </motion.a>
+              </motion.button>
 
               {/* 3. RSVP */}
               <motion.button
@@ -553,7 +609,43 @@ export default function WeddingCard({
                 </span>
               </motion.button>
 
-              {/* 4. Download */}
+              {/* 4. Wishes */}
+              <motion.div
+                variants={{
+                  hidden: { opacity: 0, y: 12 },
+                  visible: {
+                    opacity: 1,
+                    y: 0,
+                    transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1] },
+                  },
+                }}
+                whileHover={{ y: -3, transition: { duration: 0.25, ease: "easeOut" } }}
+                whileTap={{ y: 0, scale: 0.98 }}
+              >
+                <Link
+                  href={inviteCode ? `/wishes?ic=${encodeURIComponent(inviteCode)}` : "/wishes"}
+                  className="group flex flex-col items-center gap-2 cursor-pointer"
+                  title="View Wedding Wishes & Blessings"
+                >
+                  <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full border border-[#B4914F]/70 bg-[#FAF7F2] group-hover:bg-[#B4914F] group-hover:border-[#B4914F] flex items-center justify-center transition-all duration-300 shadow-[0_6px_16px_-6px_rgba(180,145,79,0.45)] group-hover:shadow-[0_8px_20px_-4px_rgba(180,145,79,0.6)]">
+                    <svg className="w-[18px] h-[18px] sm:w-5 sm:h-5 text-[#3A362C] group-hover:text-white transition-colors" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+                    </svg>
+                  </div>
+                  <span
+                    style={{
+                      fontFamily: "var(--font-montserrat), 'Montserrat', sans-serif",
+                      textShadow:
+                        "0 0 4px #FAF7F2, 0 0 8px #FAF7F2, 0 0 12px #FAF7F2, 0 1px 16px rgba(255, 255, 255, 0.95), 0 2px 22px rgba(250, 247, 242, 0.95), 0 0 30px rgba(255, 255, 255, 0.9), 0 0 40px rgba(250, 247, 242, 0.85)",
+                    }}
+                    className="text-[7.5px] sm:text-[9px] tracking-[0.26em] uppercase font-semibold text-[#3A362C] group-hover:text-[#1A1813]"
+                  >
+                    Wishes
+                  </span>
+                </Link>
+              </motion.div>
+
+              {/* 5. Download */}
               <motion.button
                 variants={{
                   hidden: { opacity: 0, y: 12 },
@@ -566,14 +658,19 @@ export default function WeddingCard({
                 whileHover={{ y: -3, transition: { duration: 0.25, ease: "easeOut" } }}
                 whileTap={{ y: 0, scale: 0.98 }}
                 type="button"
+                disabled={isDownloading}
                 onClick={handleDownload}
-                className="group flex flex-col items-center gap-2 cursor-pointer"
-                title="Save / Download Invitation"
+                className="group flex flex-col items-center gap-2 cursor-pointer disabled:opacity-60"
+                title="Download Invitation Image"
               >
                 <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full border border-[#B4914F]/70 bg-[#FAF7F2] group-hover:bg-[#B4914F] group-hover:border-[#B4914F] flex items-center justify-center transition-all duration-300 shadow-[0_6px_16px_-6px_rgba(180,145,79,0.45)] group-hover:shadow-[0_8px_20px_-4px_rgba(180,145,79,0.6)]">
-                  <svg className="w-[18px] h-[18px] sm:w-5 sm:h-5 text-[#3A362C] group-hover:text-white transition-colors" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-                  </svg>
+                  {isDownloading ? (
+                    <span className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-[#B4914F] border-t-transparent group-hover:border-white group-hover:border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <svg className="w-[18px] h-[18px] sm:w-5 sm:h-5 text-[#3A362C] group-hover:text-white transition-colors" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                    </svg>
+                  )}
                 </div>
                 <span
                   style={{
@@ -583,13 +680,24 @@ export default function WeddingCard({
                   }}
                   className="text-[7.5px] sm:text-[9px] tracking-[0.26em] uppercase font-semibold text-[#3A362C] group-hover:text-[#1A1813]"
                 >
-                  Download
+                  {isDownloading ? "Saving..." : "Download"}
                 </span>
               </motion.button>
             </motion.div>
 
           </div>
         </div>
+      </div>
+
+      {/* Hidden Dedicated 390x850 Invitation Canvas for High-Res Image Download */}
+      <div
+        className="fixed -left-[9999px] top-0 pointer-events-none z-[-100] opacity-100"
+        aria-hidden="true"
+      >
+        <InvitationDownloadCard
+          guest={activeGuest}
+          id="invitation-download-canvas"
+        />
       </div>
 
       {/* RSVP Modal Dialog */}

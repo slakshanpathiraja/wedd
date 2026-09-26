@@ -11,13 +11,13 @@ export default function Bg({ children, className = "" }: BgProps) {
     <div
       className={`relative min-h-screen w-full flex flex-col flex-1 bg-gradient-to-b from-[#FAF8F5] via-[#FAF6F0] to-[#F3EDE2] text-stone-800 overflow-hidden print:bg-[#FAF7F2] print:bg-none ${className}`}
     >
-      {/* Subtle Full-Body Background Pattern (bg.png) */}
+      {/* Subtle Full-Body Background Pattern (bg.webp) */}
       <div
         aria-hidden="true"
         className="absolute inset-0 z-0 pointer-events-none select-none opacity-[0.03] overflow-hidden print:hidden"
       >
         <Image
-          src="/bg.png"
+          src="/bg.webp"
           alt=""
           fill
           priority
@@ -32,7 +32,7 @@ export default function Bg({ children, className = "" }: BgProps) {
         className="absolute top-0 left-0 right-0 w-full z-0 pointer-events-none select-none leading-none overflow-hidden print:hidden"
       >
         <Image
-          src="/bg4.png"
+          src="/bg4.webp"
           alt=""
           width={1003}
           height={366}
@@ -41,7 +41,7 @@ export default function Bg({ children, className = "" }: BgProps) {
         />
       </div>
 
-      {/* Centered Slowly Rotating Mandala (bg2.png) - Masked along 10-to-4 clock line */}
+      {/* Centered Slowly Rotating Mandala (bg2.webp) - Masked along 10-to-4 clock line */}
       <div
         aria-hidden="true"
         style={{
@@ -52,7 +52,7 @@ export default function Bg({ children, className = "" }: BgProps) {
       >
         <div className="w-[320px] h-[320px] sm:w-[440px] sm:h-[440px] md:w-[520px] md:h-[520px] lg:w-[580px] lg:h-[580px] opacity-[0.05] animate-mandala-spin flex items-center justify-center origin-center">
           <Image
-            src="/bg2.png"
+            src="/bg2.webp"
             alt=""
             width={1200}
             height={1200}
@@ -68,7 +68,7 @@ export default function Bg({ children, className = "" }: BgProps) {
         className="absolute bottom-0 left-0 right-0 w-full z-0 pointer-events-none select-none leading-none overflow-hidden print:hidden"
       >
         <Image
-          src="/bg1.png"
+          src="/bg1.webp"
           alt=""
           width={1322}
           height={753}
