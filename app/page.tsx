@@ -33,7 +33,7 @@ export default async function Home({ searchParams }: PageProps) {
 
   // Always render the invitation card first, with guest passed into it
   return (
-    <main className="w-screen h-screen overflow-hidden">
+    <main className="w-full h-screen overflow-hidden flex items-center justify-center">
       <WeddingCard guest={guest} initialCode={ic} codeError={codeError} />
     </main>
   );

@@ -168,23 +168,107 @@ export default function WeddingCard({
         await document.fonts.ready;
       }
 
-      const dataUrl = await toPng(captureEl, {
-        width: 390,
-        height: 680,
-        canvasWidth: 780,
-        canvasHeight: 1360,
-        pixelRatio: 2,
-        cacheBust: true,
-      });
+      // Ensure all images inside capture element are decoded
+      const imgs = Array.from(captureEl.querySelectorAll("img"));
+      await Promise.all(
+        imgs.map(async (img) => {
+          if (img.complete) return;
+          try {
+            await img.decode();
+          } catch {
+            // Ignore decode errors on already cached images
+          }
+        })
+      );
 
-      const link = document.createElement("a");
+      let dataUrl: string;
+      try {
+        dataUrl = await toPng(captureEl, {
+          width: 390,
+          height: 680,
+          canvasWidth: 780,
+          canvasHeight: 1360,
+          pixelRatio: 2,
+          cacheBust: true,
+          backgroundColor: "#FAF8F5",
+        });
+      } catch (toPngErr) {
+        console.warn("First toPng attempt failed, retrying...", toPngErr);
+        dataUrl = await toPng(captureEl, {
+          width: 390,
+          height: 680,
+          canvasWidth: 780,
+          canvasHeight: 1360,
+          pixelRatio: 1.5,
+          backgroundColor: "#FAF8F5",
+        });
+      }
+
       const cleanGuest = inviteeName.replace(/[^a-zA-Z0-9]/g, "_").replace(/_+/g, "_");
-      link.download = `Hansani_Lakshan_Wedding_Invitation_${cleanGuest || "Card"}.png`;
-      link.href = dataUrl;
-      link.click();
+      const fileName = `Hansani_Lakshan_Wedding_Invitation_${cleanGuest || "Card"}.png`;
+
+      // Convert Data URL to Blob
+      const parts = dataUrl.split(";base64,");
+      const contentType = parts[0].split(":")[1] || "image/png";
+      const raw = window.atob(parts[1]);
+      const rawLength = raw.length;
+      const uInt8Array = new Uint8Array(rawLength);
+      for (let i = 0; i < rawLength; ++i) {
+        uInt8Array[i] = raw.charCodeAt(i);
+      }
+      const blob = new Blob([uInt8Array], { type: contentType });
+      const file = new File([blob], fileName, { type: "image/png" });
+
+      // 1. Mobile Native Web Share API (Primary for iOS Safari & Android Chrome)
+      if (
+        typeof navigator !== "undefined" &&
+        navigator.canShare &&
+        navigator.canShare({ files: [file] })
+      ) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: "Wedding Invitation - Hansani & Lakshan",
+            text: "Wedding Invitation for Hansani & Lakshan",
+          });
+          return;
+        } catch (shareErr: unknown) {
+          if ((shareErr as { name?: string })?.name === "AbortError") {
+            // User cancelled share modal, normal action
+            return;
+          }
+          console.warn("Web Share API error, falling back to direct download link:", shareErr);
+        }
+      }
+
+      // 2. Blob URL Download Link (Desktop & Android fallback)
+      const blobUrl = URL.createObjectURL(blob);
+      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+      if (isIOS) {
+        // iOS Safari fallback: open image in new window so user can tap & hold -> "Save to Photos"
+        window.open(blobUrl, "_blank");
+      } else {
+        const link = document.createElement("a");
+        link.style.display = "none";
+        link.download = fileName;
+        link.href = blobUrl;
+        document.body.appendChild(link);
+        link.click();
+        setTimeout(() => {
+          if (document.body.contains(link)) {
+            document.body.removeChild(link);
+          }
+          URL.revokeObjectURL(blobUrl);
+        }, 2000);
+      }
     } catch (err) {
       console.error("Failed to generate invitation image:", err);
-      window.print();
+      if (!/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
+        window.print();
+      } else {
+        alert("Unable to save automatically. Please take a screenshot of your invitation.");
+      }
     } finally {
       setIsDownloading(false);
     }
@@ -217,9 +301,9 @@ export default function WeddingCard({
   };
 
   return (
-    <div className="w-screen h-screen overflow-hidden flex flex-col items-center justify-center select-none p-3 sm:p-6 md:p-4 print:w-full print:h-screen print:overflow-visible print:p-0 print:m-0 print:bg-[#FAF7F2]">
-      <div className="relative w-full h-full max-w-[640px] my-auto print:max-w-none print:w-full print:h-full print:flex print:items-center print:justify-center">
-        <div className="relative w-full h-full px-6 py-9 sm:px-14 sm:py-10 md:px-16 md:py-5 print:py-12 print:px-8">
+    <div className="w-full h-screen overflow-hidden flex flex-col items-center justify-center select-none p-2 sm:p-4 md:p-5 print:w-full print:h-screen print:overflow-visible print:p-0 print:m-0 print:bg-[#FAF7F2]">
+      <div className="relative w-full h-full max-w-md xl:max-w-xl my-auto print:max-w-none print:w-full print:h-full print:flex print:items-center print:justify-center">
+        <div className="relative w-full h-full px-5 py-6 sm:px-8 sm:py-7 md:px-8 md:py-6 print:py-12 print:px-8">
           <div className="flex flex-col items-center justify-center text-center h-full">
 
             {/* Header - Save The Date with ornamental line-diamond-line */}
@@ -227,15 +311,15 @@ export default function WeddingCard({
               initial={{ opacity: 0, y: -16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.9 }}
-              className="mb-4 sm:mb-5 md:mb-3 flex flex-col items-center"
+              className="mb-3 sm:mb-4 md:mb-3 flex flex-col items-center"
             >
               <p
                 style={{ fontFamily: "var(--font-montserrat), 'Montserrat', sans-serif" }}
-                className="text-[10px] sm:text-xs md:text-sm uppercase tracking-[0.5em] text-[#8A8064] font-semibold"
+                className="text-[10px] sm:text-xs uppercase tracking-[0.5em] text-[#8A8064] font-semibold"
               >
                 Save the Date
               </p>
-              <div className="flex items-center gap-2 mt-3 md:mt-2">
+              <div className="flex items-center gap-2 mt-2 sm:mt-2.5">
                 <motion.div
                   initial={{ scaleX: 0 }}
                   animate={{ scaleX: 1 }}
@@ -258,19 +342,19 @@ export default function WeddingCard({
             </motion.div>
 
             {/* Couple Names - Flowing Wedding Calligraphy Script (Animates First!) */}
-            <div className="my-2 sm:my-3 inline-flex flex-col text-left select-none text-wedding-green mx-auto">
+            <div className="my-2 sm:my-2.5 inline-flex flex-col text-left select-none text-wedding-green mx-auto">
 
               {/* 1. Hansani (Shifted further left) */}
               <motion.div
                 initial={{ opacity: 0, x: -32, filter: "blur(6px)" }}
                 animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
                 transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
-                className="-translate-x-4 sm:-translate-x-8 md:-translate-x-12"
+                className="-translate-x-3 sm:-translate-x-5"
               >
                 <span
                   style={{
                     fontFamily: "var(--font-great-vibes), 'Great Vibes', 'Alex Brush', cursive",
-                    fontSize: "min(11vh, 17vw, 150px)",
+                    fontSize: "min(11vh, 18vw, 115px)",
                   }}
                   className="font-normal leading-none tracking-normal"
                 >
@@ -283,12 +367,12 @@ export default function WeddingCard({
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1], delay: 0.38 }}
-                className="pl-10 sm:pl-16 md:pl-20 -mt-6 sm:-mt-9 md:-mt-11 -mb-2 sm:-mb-3 md:-mb-4"
+                className="pl-10 sm:pl-14 -mt-5 sm:-mt-6 -mb-2 sm:-mb-2.5"
               >
                 <span
                   style={{
                     fontFamily: "var(--font-alex-brush), 'Alex Brush', 'Great Vibes', cursive",
-                    fontSize: "min(6vh, 9vw, 80px)",
+                    fontSize: "min(6vh, 9vw, 55px)",
                   }}
                   className="italic text-[#8A8064]"
                 >
@@ -301,12 +385,12 @@ export default function WeddingCard({
                 initial={{ opacity: 0, x: 32, filter: "blur(6px)" }}
                 animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
                 transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1], delay: 0.52 }}
-                className="pl-20 sm:pl-32 md:pl-44 -mt-5 sm:-mt-7 md:-mt-9"
+                className="pl-18 sm:pl-24 -mt-4 sm:-mt-5"
               >
                 <span
                   style={{
                     fontFamily: "var(--font-great-vibes), 'Great Vibes', 'Alex Brush', cursive",
-                    fontSize: "min(11vh, 17vw, 150px)",
+                    fontSize: "min(11vh, 18vw, 115px)",
                   }}
                   className="font-normal leading-none tracking-normal"
                 >
@@ -361,10 +445,10 @@ export default function WeddingCard({
               initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 1.35 }}
-              className="my-3 sm:my-4 md:my-2 flex items-center justify-center gap-3 sm:gap-5 md:gap-7 select-none"
+              className="my-2.5 sm:my-3 md:my-2.5 flex items-center justify-center gap-2.5 sm:gap-4 md:gap-4 select-none"
             >
               {/* Left: THURSDAY framed with ultra-delicate horizontal gold lines */}
-              <div className="flex flex-col items-center justify-center min-w-[92px] sm:min-w-[125px] md:min-w-[155px] lg:min-w-[180px]">
+              <div className="flex flex-col items-center justify-center min-w-[88px] sm:min-w-[110px] md:min-w-[115px]">
                 <motion.div
                   initial={{ scaleX: 0 }}
                   animate={{ scaleX: 1 }}
@@ -373,7 +457,7 @@ export default function WeddingCard({
                 />
                 <span
                   style={{ fontFamily: "var(--font-montserrat), 'Montserrat', sans-serif" }}
-                  className="py-2.5 sm:py-3.5 md:py-4 text-[11px] sm:text-sm md:text-base lg:text-lg tracking-[0.22em] font-medium text-[#3A362C] uppercase whitespace-nowrap"
+                  className="py-2 sm:py-2.5 text-[11px] sm:text-xs tracking-[0.22em] font-medium text-[#3A362C] uppercase whitespace-nowrap"
                 >
                   Thursday
                 </span>
@@ -390,7 +474,7 @@ export default function WeddingCard({
                 initial={{ scaleY: 0 }}
                 animate={{ scaleY: 1 }}
                 transition={{ duration: 0.9, ease: "easeOut", delay: 1.45 }}
-                className="w-px h-16 sm:h-20 md:h-26 lg:h-30 bg-gradient-to-b from-transparent via-[#B4914F]/60 to-transparent origin-center"
+                className="w-px h-14 sm:h-16 md:h-16 bg-gradient-to-b from-transparent via-[#B4914F]/60 to-transparent origin-center"
               />
 
               {/* Center: MARCH / 11 / 2027 */}
@@ -398,11 +482,11 @@ export default function WeddingCard({
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 1.4 }}
-                className="flex flex-col items-center justify-center px-2 sm:px-5"
+                className="flex flex-col items-center justify-center px-2 sm:px-3"
               >
                 <span
                   style={{ fontFamily: "var(--font-montserrat), 'Montserrat', sans-serif" }}
-                  className="text-[11px] sm:text-sm md:text-base lg:text-lg tracking-[0.32em] font-medium text-[#3A362C] uppercase leading-tight"
+                  className="text-[11px] sm:text-xs tracking-[0.32em] font-medium text-[#3A362C] uppercase leading-tight"
                 >
                   March
                 </span>
@@ -412,13 +496,13 @@ export default function WeddingCard({
                     fontVariantNumeric: "lining-nums",
                     fontFeatureSettings: "'lnum'",
                   }}
-                  className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-semibold text-[#B4914F] leading-none my-1.5 tracking-wide"
+                  className="text-4xl sm:text-5xl md:text-5xl font-semibold text-[#B4914F] leading-none my-1 tracking-wide"
                 >
                   11
                 </span>
                 <span
                   style={{ fontFamily: "var(--font-montserrat), 'Montserrat', sans-serif" }}
-                  className="text-[11px] sm:text-sm md:text-base lg:text-lg tracking-[0.32em] font-medium text-[#3A362C] uppercase leading-tight"
+                  className="text-[11px] sm:text-xs tracking-[0.32em] font-medium text-[#3A362C] uppercase leading-tight"
                 >
                   2027
                 </span>
@@ -429,11 +513,11 @@ export default function WeddingCard({
                 initial={{ scaleY: 0 }}
                 animate={{ scaleY: 1 }}
                 transition={{ duration: 0.9, ease: "easeOut", delay: 1.45 }}
-                className="w-px h-16 sm:h-20 md:h-26 lg:h-30 bg-gradient-to-b from-transparent via-[#B4914F]/60 to-transparent origin-center"
+                className="w-px h-14 sm:h-16 md:h-16 bg-gradient-to-b from-transparent via-[#B4914F]/60 to-transparent origin-center"
               />
 
               {/* Right: AT 09:33 AM framed with ultra-delicate horizontal gold lines */}
-              <div className="flex flex-col items-center justify-center min-w-[92px] sm:min-w-[125px] md:min-w-[155px] lg:min-w-[180px]">
+              <div className="flex flex-col items-center justify-center min-w-[88px] sm:min-w-[110px] md:min-w-[115px]">
                 <motion.div
                   initial={{ scaleX: 0 }}
                   animate={{ scaleX: 1 }}
@@ -442,7 +526,7 @@ export default function WeddingCard({
                 />
                 <span
                   style={{ fontFamily: "var(--font-montserrat), 'Montserrat', sans-serif" }}
-                  className="py-2.5 sm:py-3.5 md:py-4 text-[11px] sm:text-sm md:text-base lg:text-lg tracking-[0.22em] font-medium text-[#3A362C] uppercase whitespace-nowrap"
+                  className="py-2 sm:py-2.5 text-[11px] sm:text-xs tracking-[0.22em] font-medium text-[#3A362C] uppercase whitespace-nowrap"
                 >
                   At 09:33 AM
                 </span>
@@ -461,18 +545,18 @@ export default function WeddingCard({
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 1.65 }}
               style={{ fontFamily: "var(--font-garamond), 'Cormorant Garamond', 'Times New Roman', Georgia, serif" }}
-              className="mt-2 sm:mt-2.5 md:mt-1.5 space-y-1 sm:space-y-1.5 text-[#6B6656]"
+              className="mt-2 sm:mt-2.5 md:mt-2 space-y-0.5 sm:space-y-1 text-[#6B6656]"
             >
-              <p className="text-xs sm:text-sm md:text-base tracking-[0.35em] uppercase font-semibold text-[#33312C]">
+              <p className="text-xs tracking-[0.35em] uppercase font-semibold text-[#33312C]">
                 At
               </p>
-              <p className="text-lg sm:text-xl md:text-2xl lg:text-[26px] tracking-[0.35em] uppercase font-semibold text-[#3A362C] leading-tight">
+              <p className="text-lg sm:text-xl md:text-xl tracking-[0.35em] uppercase font-semibold text-[#3A362C] leading-tight">
                 Silver Ray
               </p>
-              <p className="text-sm sm:text-base md:text-lg lg:text-xl tracking-[0.26em] uppercase font-medium text-[#6B6656] leading-snug">
+              <p className="text-xs sm:text-sm md:text-sm tracking-[0.26em] uppercase font-medium text-[#6B6656] leading-snug">
                 Pink Sapphire Banquet Hall
               </p>
-              <p className="text-xs sm:text-sm md:text-base lg:text-lg tracking-[0.3em] uppercase font-normal text-[#8A8064] leading-normal">
+              <p className="text-[11px] sm:text-xs md:text-xs tracking-[0.3em] uppercase font-normal text-[#8A8064] leading-normal">
                 Rathnapura
               </p>
             </motion.div>
@@ -689,9 +773,10 @@ export default function WeddingCard({
         </div>
       </div>
 
-      {/* Hidden Dedicated 390x850 Invitation Canvas for High-Res Image Download */}
+      {/* Off-screen (behind viewport) invitation canvas for high-res download */}
       <div
-        className="fixed -left-[9999px] top-0 pointer-events-none z-[-100] opacity-100"
+        className="fixed left-0 top-0 pointer-events-none -z-50 opacity-[0.002] overflow-hidden"
+        style={{ width: "390px", height: "680px" }}
         aria-hidden="true"
       >
         <InvitationDownloadCard

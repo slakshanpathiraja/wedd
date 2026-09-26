@@ -26,10 +26,10 @@ export default function Bg({ children, className = "" }: BgProps) {
         />
       </div>
 
-      {/* Decorative Floral Arch Graphic (Header Full Width) */}
+      {/* Decorative Floral Arch Graphic (Centered to match mobile card width) */}
       <div
         aria-hidden="true"
-        className="absolute top-0 left-0 right-0 w-full z-0 pointer-events-none select-none leading-none overflow-hidden print:hidden"
+        className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-md xl:max-w-xl z-0 pointer-events-none select-none leading-none overflow-hidden print:hidden"
       >
         <Image
           src="/bg4.webp"
@@ -50,7 +50,7 @@ export default function Bg({ children, className = "" }: BgProps) {
         }}
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0 pointer-events-none select-none print:hidden"
       >
-        <div className="w-[320px] h-[320px] sm:w-[440px] sm:h-[440px] md:w-[520px] md:h-[520px] lg:w-[580px] lg:h-[580px] opacity-[0.05] animate-mandala-spin flex items-center justify-center origin-center">
+        <div className="w-[320px] h-[320px] sm:w-[380px] sm:h-[380px] md:w-[440px] md:h-[440px] opacity-[0.05] animate-mandala-spin flex items-center justify-center origin-center">
           <Image
             src="/bg2.webp"
             alt=""
@@ -62,10 +62,10 @@ export default function Bg({ children, className = "" }: BgProps) {
         </div>
       </div>
 
-      {/* Decorative Floral Graphic (Footer Full Width) */}
+      {/* Decorative Floral Graphic (Centered to match mobile card width) */}
       <div
         aria-hidden="true"
-        className="absolute bottom-0 left-0 right-0 w-full z-0 pointer-events-none select-none leading-none overflow-hidden print:hidden"
+        className="absolute bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md xl:max-w-xl z-0 pointer-events-none select-none leading-none overflow-hidden print:hidden"
       >
         <Image
           src="/bg1.webp"
@@ -78,7 +78,7 @@ export default function Bg({ children, className = "" }: BgProps) {
       </div>
 
       {/* Content Layer (renders above the background image) */}
-      <div className="relative z-10 flex-1 flex flex-col w-full">
+      <div className="relative z-10 flex-1 flex flex-col w-full items-center">
         {children}
       </div>
     </div>
