@@ -1,0 +1,99 @@
+@import "tailwindcss";
+
+:root {
+  --background: #FAF7F2;
+  --foreground: #3A3835;
+}
+
+@theme {
+  --font-pinyon: var(--font-pinyon), 'Pinyon Script', cursive;
+  --font-script: var(--font-alex-brush), var(--font-great-vibes), cursive;
+  --font-great-vibes: var(--font-great-vibes), 'Great Vibes', cursive;
+  --font-alex-brush: var(--font-alex-brush), 'Alex Brush', cursive;
+  --font-garamond: var(--font-garamond), 'Cormorant Garamond', Georgia, serif;
+  --font-montserrat: var(--font-montserrat), 'Montserrat', ui-sans-serif, system-ui, sans-serif;
+  --font-playfair: var(--font-playfair), 'Playfair Display', Georgia, serif;
+  --font-serif: var(--font-garamond), 'Cormorant Garamond', Georgia, serif;
+
+  --color-wedding-green: #7C785E;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-garamond), 'Cormorant Garamond', Georgia, serif;
+  margin: 0;
+  padding: 0;
+}
+
+.font-pinyon {
+  font-family: var(--font-pinyon), 'Pinyon Script', cursive !important;
+}
+
+.font-script {
+  font-family: var(--font-alex-brush), var(--font-great-vibes), 'Alex Brush', 'Great Vibes', cursive !important;
+}
+
+.font-great-vibes {
+  font-family: var(--font-great-vibes), 'Great Vibes', cursive !important;
+}
+
+.font-alex-brush {
+  font-family: var(--font-alex-brush), 'Alex Brush', cursive !important;
+}
+
+.font-garamond {
+  font-family: var(--font-garamond), 'Cormorant Garamond', Georgia, serif !important;
+}
+
+.font-montserrat {
+  font-family: var(--font-montserrat), 'Montserrat', ui-sans-serif, system-ui, sans-serif !important;
+}
+
+.font-playfair {
+  font-family: var(--font-playfair), 'Playfair Display', Georgia, serif !important;
+}
+
+@keyframes mandala-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-mandala-spin {
+  animation: mandala-spin 80s linear infinite;
+  transform-origin: center center;
+  will-change: transform;
+}
+
+@media print {
+  @page {
+    size: portrait;
+    margin: 0;
+  }
+
+  *, *::before, *::after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  html, body {
+    background-color: #FAF7F2 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    overflow: visible !important;
+  }
+
+  .print\:hidden {
+    display: none !important;
+  }
+}
